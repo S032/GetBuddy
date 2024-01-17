@@ -18,6 +18,8 @@
 /* Acronym */
 #define SA  struct sockaddr
 
+void err_sys(const char*);
+
 int Socket(int domain, int type, int protocol);
 
 void Bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
@@ -35,6 +37,11 @@ ssize_t readn(int fd, void *vptr, size_t n);
 ssize_t writen(int fd, const void *vptr, size_t n);
 
 pid_t Fork(void);
+
+typedef void Sigfunc(int);
+Sigfunc* signalunv(int signo, Sigfunc *func);
+
+void sig_chld(int signo);
 
 void str_serv(int sockfd);
 

@@ -1,5 +1,6 @@
 #include <netinet/in.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -7,6 +8,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <strings.h>
+#include <signal.h>
 
 /* Conection Constants */
 #define LOCAL_IP "127.0.0.1"
@@ -21,58 +23,42 @@
 /* Acronym */
 #define SA  struct sockaddr
 
+void err_sys(const char* err_text) {
+    perror(err_text);
+    exit(EXIT_FAILURE);
+}
+
 int Socket(int domain, int type, int protocol) {
-    int res = socket(domain, type, protocol);
-    if (res < 0) {
-        perror("Socket Failed: ");
-        exit(EXIT_FAILURE);
-    }
+    int res;
+    if ((res = socket(domain, type, protocol)) < 0) err_sys("Socket Failed: ");
     return res;
 }
 
 void Bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
-    int res = bind(sockfd, addr, addrlen);
-    if (res < 0) {
-        perror("Bind Failed: ");
-        exit(EXIT_FAILURE);
-    }
+    int res;
+    if ((res = bind(sockfd, addr, addrlen)) < 0) err_sys("Bind Failed: ");
 }
 
 void Listen(int sockfd, int backlog) {
-    int res = listen(sockfd, backlog);
-    if (res < 0) {
-        perror("Listen Failed: ");
-        exit(EXIT_FAILURE);
-    }
+    int res;
+    if ((res = listen(sockfd, backlog)) < 0) err_sys("Listen Failed: ");
 }
 
 int Accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
-    int res = accept(sockfd, addr, addrlen);
-    if (res < 0) {
-        perror("Accept Failed: ");
-        exit(EXIT_FAILURE);
-    }
+    int res;
+    if ((res = accept(sockfd, addr, addrlen)) < 0) err_sys("Accept Failed: ");
     return res;
 }
 
 void Inet_pton(int af, const char *scr, void *dst) {
     int res = inet_pton(af, scr, dst);
-    if (res == 0) {
-        perror("Addres is invalid: ");
-        exit(EXIT_FAILURE);
-    }
-    if (res == -1) {
-        perror("Adress Family is invalid: ");
-        exit(EXIT_FAILURE);
-    }
+    if (res == 0) err_sys("Addres is invalid: ");
+    if (res == -1) err_sys("Adress Family is invalid: ");
 }
 
 void Connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
-    int res = connect(sockfd, addr, addrlen);
-    if (res < 0) {
-        perror("Connect Failed: ");
-        exit(EXIT_FAILURE);
-    }
+    int res;
+    if ((res = connect(sockfd, addr, addrlen)) < 0) err_sys("Connect Failed: ");
 }
 
 ssize_t readn(int fd, void *vptr, size_t n) {
@@ -120,27 +106,54 @@ ssize_t writen(int fd, const void *vptr, size_t n) {
 
 pid_t Fork(void) {
     pid_t PID;
-    if ((PID = fork()) < 0) {
-        perror("Fork Failed: ");
-        exit(EXIT_FAILURE);
-    }
+    if ((PID = fork()) < 0) err_sys("Fork Failed: ");
     return PID;
+}
+
+typedef void Sigfunc(int);
+Sigfunc* signalunv(int signum, Sigfunc *func) {
+    struct sigaction act, oldact;
+
+    act.sa_handler = func;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    if (signum == SIGALRM) {
+#ifdef SA_INTERRUPT
+        act.sa_flags |= SA_INTERRUPT;
+#endif
+    } else {
+#ifdef SA_RESTART
+        act.sa_flags |= SA_RESTART;
+#endif
+    }
+    if (sigaction(signum, &act, &oldact) < 0)
+        return (SIG_ERR);
+    return (oldact.sa_handler);
+}
+
+void sig_chld(int signum) {
+    pid_t pid;
+    int stat;
+
+    pid = wait(&stat);
+    printf("child %d terminated\n", pid);
+    return;
 }
 
 void str_serv(int sockfd) {
     ssize_t n;
     char buf[MAXLINE];
 
-    while(true) {
+    while(1) {
         if ((n = readn(sockfd, buf, MAXLINE)) == 0)
             return;
 
-        printf("client: "), fputs(buf, stdout); 
+        printf("client: "), fputs(buf, stdout);
     }
 }
 
 void str_cli(FILE *fp, int sockfd) {
-    char sendline[MAXLINE], recvline[MAXLINE];
+    char sendline[MAXLINE];
 
     while(fgets(sendline, MAXLINE, fp) != NULL) {
         writen(sockfd, sendline, MAXLINE);

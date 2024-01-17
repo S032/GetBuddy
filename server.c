@@ -1,7 +1,9 @@
 #include "erproc.h"
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -20,9 +22,15 @@ int main() {
     listenfd = Socket(AF_INET, SOCK_STREAM, 0);
     Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
     Listen(listenfd, LISTENQ);
+    signalunv(SIGCHLD, sig_chld);
 
-    while (true) {
-        connfd = Accept(listenfd, (SA *) &clientinfo, &cadrlen);
+    while (1) {
+        if ((connfd = accept(listenfd, (SA *) &clientinfo, &cadrlen)) < 0) {
+            if (errno == EINTR)
+                continue;
+            else
+                err_sys("Accept Failed: ");
+        }
 
         getsockname(connfd, (SA *) &clientinfo, &cadrlen);
         char ip[32];
