@@ -24,7 +24,7 @@ int main() {
     Listen(listenfd, LISTENQ);
     signalunv(SIGCHLD, sig_chld);
 
-    while (1) {
+    while (true) {
         if ((connfd = accept(listenfd, (SA *) &clientinfo, &cadrlen)) < 0) {
             if (errno == EINTR)
                 continue;
@@ -32,7 +32,7 @@ int main() {
                 err_sys("Accept Failed: ");
         }
 
-        getsockname(connfd, (SA *) &clientinfo, &cadrlen);
+        getpeername(connfd, (SA *) &clientinfo, &cadrlen);
         char ip[32];
         uint16_t port = htons(clientinfo.sin_port);
         inet_ntop(AF_INET, &clientinfo.sin_addr, ip, INET_ADDRSTRLEN);
