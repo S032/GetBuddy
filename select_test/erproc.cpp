@@ -30,11 +30,6 @@ void err_sys(const char* err_text) {
     exit(EXIT_FAILURE);
 }
 
-void err_quit(const char* err_text) {
-    printf("%s\n", err_text);
-    exit(EXIT_FAILURE);
-}
-
 int Socket(int domain, int type, int protocol) {
     int res;
     if ((res = socket(domain, type, protocol)) < 0) err_sys("Socket Failed");
@@ -111,6 +106,42 @@ ssize_t writen(int fd, const void *vptr, size_t n) {
     return (n);
 }
 
+pid_t Fork(void) {
+    pid_t PID;
+    if ((PID = fork()) < 0) err_sys("Fork Failed: ");
+    return PID;
+}
+
+typedef void Sigfunc(int);
+Sigfunc* signalunv(int signum, Sigfunc *func) {
+    struct sigaction act, oldact;
+
+    act.sa_handler = func;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    if (signum == SIGALRM) {
+#ifdef SA_INTERRUPT
+        act.sa_flags |= SA_INTERRUPT;
+#endif
+    } else {
+#ifdef SA_RESTART
+        act.sa_flags |= SA_RESTART;
+#endif
+    }
+    if (sigaction(signum, &act, &oldact) < 0)
+        return (SIG_ERR);
+    return (oldact.sa_handler);
+}
+
+void sig_chld(int signum) {
+    pid_t pid;
+    int stat;
+
+    while((pid = waitpid(-1, &stat, WNOHANG)) > 0)
+        printf("child %d terminated\n", pid);
+    return;
+}
+
 void str_serv(int sockfd) {
     ssize_t n;
     char buf[MAXLINE];
@@ -128,6 +159,21 @@ void str_cli(FILE *fp, int sockfd) {
     fd_set readset;
     char sendline[MAXLINE], recvline[MAXLINE];
 
+    while(true) {
+        if (fgets(sendline, MAXLINE, fp) == NULL)
+            return;
+        writen(sockfd, sendline, sizeof(sendline));
+        if (readn(sockfd, recvline, MAXLINE) == 0)
+            err_sys("server terminated prematurely");
+        fputs(recvline, stdout);
+    }
+}
+
+void str_cli_select(FILE *fp, int sockfd) {
+    int maxfd;
+    fd_set readset;
+    char sendline[MAXLINE], recvline[MAXLINE];
+
     FD_ZERO(&readset);
     while(true) {
         FD_SET(fileno(fp), &readset);
@@ -137,7 +183,7 @@ void str_cli(FILE *fp, int sockfd) {
 
         if (FD_ISSET(sockfd, &readset)) { //socket's ready to read
             if (readn(sockfd, recvline, MAXLINE) == 0)
-                err_quit("server terminated prematurely");
+                err_sys("server terminated prematurely");
             fputs(recvline, stdout);
         }
         if (FD_ISSET(fileno(fp), &readset)) { //input device's ready to read
