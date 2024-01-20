@@ -1,16 +1,15 @@
 #include <netinet/in.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <arpa/inet.h>
-#include <stdio.h>
 #include <errno.h>
 #include <math.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <strings.h>
-#include <signal.h>
+#include <iostream>
+#include <string>
 
 /* Conection Constants */
 #define LOCAL_IP "127.0.0.1"
@@ -31,7 +30,7 @@ void err_sys(const char* err_text) {
 }
 
 void err_quit(const char* err_text) {
-    printf("%s\n", err_text);
+    std::cout << err_text << std::endl;
     exit(EXIT_FAILURE);
 }
 
@@ -123,27 +122,28 @@ void str_serv(int sockfd) {
     }
 }
 
-void str_cli(FILE *fp, int sockfd) {
+void str_cli(int fp, int sockfd, std::string username) {
     int maxfd;
     fd_set readset;
-    char sendline[MAXLINE], recvline[MAXLINE];
+    char recvline[MAXLINE];
+    std::string msgToSend;
 
     FD_ZERO(&readset);
     while(true) {
-        FD_SET(fileno(fp), &readset);
+        FD_SET(fp, &readset);
         FD_SET(sockfd, &readset);
-        maxfd = std::max(fileno(fp), sockfd) + 1;
+        maxfd = std::max(fp, sockfd) + 1;
         select(maxfd, &readset, NULL, NULL, NULL);
 
         if (FD_ISSET(sockfd, &readset)) { //socket's ready to read
-            if (readn(sockfd, recvline, MAXLINE) == 0)
+            if (recv(sockfd, recvline, MAXLINE, 0) == 0)
                 err_quit("server terminated prematurely");
-            fputs(recvline, stdout);
+            std::cout << recvline << std::endl;
         }
-        if (FD_ISSET(fileno(fp), &readset)) { //input device's ready to read
-            if (fgets(sendline, MAXLINE, fp) == NULL)
-                return; // all's done
-            writen(sockfd, sendline, sizeof(sendline));
+        if (FD_ISSET(fp, &readset)) { //input device's ready to read
+            getline(std::cin, msgToSend);
+            msgToSend = username + ": " + msgToSend;
+            send(sockfd, msgToSend.c_str(), msgToSend.size(), 0);
         }
     }
 }

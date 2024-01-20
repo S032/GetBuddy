@@ -3,7 +3,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <stdio.h>
+#include <string>
 
 /* Conection Constants */
 #define LOCAL_IP "127.0.0.1"
@@ -40,6 +40,6 @@ ssize_t writen(int fd, const void *vptr, size_t n);
 
 void str_serv(int sockfd);
 
-void str_cli(FILE *fp, int sockfd);
+void str_cli(int fp, int sockfd, std::string username);
 
 #endif

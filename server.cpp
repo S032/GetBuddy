@@ -60,7 +60,7 @@ int main() {
             if (i > maxi)
                 maxi = i; // max index in client[]
 
-            
+
             char ip[32];
             uint16_t port = htons(cliaddr.sin_port);
             inet_ntop(AF_INET, &cliaddr.sin_addr, ip, INET_ADDRSTRLEN);
@@ -74,7 +74,7 @@ int main() {
             if ( (currentsockfd = client[i]) < 0)
                 continue;
             if (FD_ISSET(currentsockfd, &readset)) {
-                if ((n = readn(currentsockfd, buf, MAXLINE)) == 0) {
+                if ((n = recv(currentsockfd, buf, MAXLINE, 0)) == 0) {
                     // close client *EOF
                     close(currentsockfd);
                     FD_CLR(currentsockfd, &master);
@@ -94,7 +94,7 @@ int main() {
                     if (allsock == currentsockfd)
                         continue;
                     if (FD_ISSET(allsock, &master)) {
-                        writen(allsock, buf, n);
+                        send(allsock, buf, n, 0);
                     }
                 }
 
