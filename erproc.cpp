@@ -115,6 +115,7 @@ void str_serv(int sockfd) {
     char buf[MAXLINE];
 
     while(1) {
+        memset(buf, 0, sizeof(buf));
         if ((n = readn(sockfd, buf, MAXLINE)) == 0)
             return;
 

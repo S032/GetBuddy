@@ -2,7 +2,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -74,6 +74,7 @@ int main() {
             if ( (currentsockfd = client[i]) < 0)
                 continue;
             if (FD_ISSET(currentsockfd, &readset)) {
+                memset(buf, 0, sizeof(buf));
                 if ((n = recv(currentsockfd, buf, MAXLINE, 0)) == 0) {
                     // close client *EOF
                     close(currentsockfd);
