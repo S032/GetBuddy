@@ -7,7 +7,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <strings.h>
+#include <string.h>
 #include <iostream>
 #include <string>
 
@@ -126,7 +126,6 @@ void str_cli(int fp, int sockfd, std::string username) {
     int maxfd;
     fd_set readset;
     char recvline[MAXLINE];
-    std::string msgToSend;
 
     FD_ZERO(&readset);
     while(true) {
@@ -136,11 +135,13 @@ void str_cli(int fp, int sockfd, std::string username) {
         select(maxfd, &readset, NULL, NULL, NULL);
 
         if (FD_ISSET(sockfd, &readset)) { //socket's ready to read
+            memset(recvline, 0, MAXLINE);
             if (recv(sockfd, recvline, MAXLINE, 0) == 0)
                 err_quit("server terminated prematurely");
             std::cout << recvline << std::endl;
         }
         if (FD_ISSET(fp, &readset)) { //input device's ready to read
+            std::string msgToSend;
             getline(std::cin, msgToSend);
             msgToSend = username + ": " + msgToSend;
             send(sockfd, msgToSend.c_str(), msgToSend.size(), 0);
