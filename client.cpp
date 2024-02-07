@@ -25,8 +25,8 @@ int main(int argc, char **argv) {
     std::cout << "username: " << std::endl;
     getline(std::cin, username);
 
-    sockfd = Socket(AF_INET, SOCK_STREAM, 0);
-    Connect(sockfd, (const struct sockaddr *) &servaddr, sizeof(servaddr));
+    sockfd = Socket(AF_INET, SOCK_STREAM, 0); //<---- socket()
+    Connect(sockfd, (const struct sockaddr *) &servaddr, sizeof(servaddr)); //<---- connect()
 
     std::cout << "successfully connected" << std::endl;
     str_cli(STDIN_FILENO, sockfd, username);

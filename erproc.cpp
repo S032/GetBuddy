@@ -31,7 +31,7 @@ void err_sys(const char* err_text) {
 
 void err_quit(const char* err_text) {
     std::cout << err_text << std::endl;
-    exit(EXIT_FAILURE);
+    exit(EXIT_SUCCESS);
 }
 
 int Socket(int domain, int type, int protocol) {

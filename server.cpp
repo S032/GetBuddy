@@ -18,16 +18,16 @@ int main() {
     socklen_t clilen;
     struct sockaddr_in cliaddr, servaddr;
 
-    listenfd = Socket(AF_INET, SOCK_STREAM, 0);
+    listenfd = Socket(AF_INET, SOCK_STREAM, 0); //<---- socket()
 
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(SERV_PORT);
 
-    Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
+    Bind(listenfd, (SA *) &servaddr, sizeof(servaddr)); //<---- bind()
 
-    Listen(listenfd, LISTENQ);
+    Listen(listenfd, LISTENQ); //<---- listen()
 
     maxfd = listenfd; // initialisation
     maxi = -1; // index in array client[]
@@ -42,7 +42,7 @@ int main() {
 
         if (FD_ISSET(listenfd, &readset)) { // connect with new client
             clilen = sizeof(cliaddr);
-            connfd = Accept(listenfd, (SA *) &cliaddr, &clilen);
+            connfd = Accept(listenfd, (SA *) &cliaddr, &clilen); //<---- accept()
 
 
             for (i = 0; i < FD_SETSIZE; i++) {
